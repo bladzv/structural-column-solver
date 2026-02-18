@@ -36,26 +36,21 @@ Run:
 
 Interactive example: choose a menu option (1 = Straight, 2 = Crooked, 3 = Eccentric), then follow prompts for geometry and material inputs. The program prints radius of gyration, slenderness ratio, column constant, and recommended Euler/Johnson loads.
 
-## Project layout
-- `columnsolver.cpp` — canonical source; numerical helpers and CLI handlers (`handle_straight()`, `handle_crooked()`, `handle_eccentric()`).
-- `Makefile` — build/run/clean/test targets (`test` is a placeholder until tests are added).
+## Project structure
+Below is the repository layout and purpose of each top-level item.
+
+```
+columnsolver.cpp          # Canonical single-file source: numeric helpers + CLI handlers
+Makefile                  # Build/run/clean/test helper targets
+README.md                 # Project overview, quick start, and developer notes
+LICENSE                   # MIT license (this project)
+legacy_columnsolver.exe   # Original school submission (outdated) — kept for reference
+.gitignore                # (ignored build artifacts and editor files)
+```
+
+Build artifacts and platform binaries (for example `columnsolver` or `columnsolver.exe`) are intentionally omitted from the repository and are listed in `.gitignore`. Build locally with `make build` or `g++` to produce the executable. Exception: `legacy_columnsolver.exe` is a checked-in historical binary — the original file submitted for coursework and now kept only for reference (outdated).
 
 ## Developer guidance
 - Start with `columnsolver.cpp` helpers if you need to adjust formulas or tolerances.
 - Use `double` precision and small tolerances (e.g., 1e-6) for unit tests that compare floating-point results.
 
-## Tests & CI (recommended next steps)
-- Add unit tests (recommended: `doctest` for single-file convenience or `Google Test` for larger suites). Create tests that reproduce the original pa/paa numeric issues and assert corrected behavior.
-- Add GitHub Actions CI that builds on Ubuntu and macOS and runs tests. Include sanitizer builds (ASan/UBSan) for numeric/runtime checks.
-
-## Contribution ideas
-1. Add unit tests validating Euler vs Johnson branches and edge-case slenderness ratios.
-2. Add a CI workflow that runs `make build` and `make test` on `ubuntu-latest` and `macos-latest`.
-3. Split numeric helpers into a small header/module for easier testing.
-
-## License
-This project is licensed under the MIT License — see `LICENSE` for details.
-
----
-
-If you'd like, I can now add unit tests (recommended first step) or create a GitHub Actions CI workflow—which should I do next? (reply `tests`, `ci`, or `pr`)

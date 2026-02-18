@@ -1,0 +1,52 @@
+# Ignore build artifacts and binaries
+columnsolver
+columnsolver_sanitized
+*.exe
+!legacy_columnsolver.exe
+*.out
+*.app
+*.o
+*.obj
+*.so
+*.a
+*.lo
+*.la
+
+# Build directories
+/build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Test / coverage
+*.gcda
+*.gcno
+*.gcov
+coverage/
+
+# Editor / OS files
+.vscode/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.sln
+*.swp
+*~
+.DS_Store
+*.dSYM/
+
+# Logs
+*.log
+
+# Test artifacts
+tests/*.exe
+tests/*.out
+
+# GitHub session files (ignore session working docs)
+.github/actions.md
+.github/pr_description.md
+
+# Misc
+.env

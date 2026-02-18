@@ -1,388 +1,313 @@
-#include<iostream.h>
-#include<conio.h>
-#include<math.h>
+#include <iostream>
+#include <cmath>
+#include <limits>
+#include <cstdlib>
+#include <iomanip>
+
+constexpr double PI = 3.141592653589793;
+using namespace std;
+
+static bool valid_positive(double x) { return std::isfinite(x) && x > 0.0; }
+
+static double solve_quadratic_small_root(double c1, double c2) {
+    // returns the smaller root of x^2 + c1*x + c2 = 0 using stable sqrt guard
+    double disc = c1*c1 - 4.0*c2;
+    if (disc < 0.0) disc = 0.0;
+    return (-c1 - std::sqrt(disc)) / 2.0;
+}
+
+static double euler_load_from_sr(double E, double A, double sr) {
+    // original code used: (pi^2 * E * A) / (sr^2)
+    return (PI*PI*E*A) / (sr*sr);
+}
+
+static double johnson_load(double A, double S, double sr, double E) {
+    return (A*S) * (1.0 - (S*sr*sr) / (4.0*PI*PI*E));
+}
+
+static double read_positive(const string &prompt) {
+    double v = 0.0;
+    while (true) {
+        cout << prompt;
+        if (!(cin >> v)) { cin.clear(); cin.ignore(numeric_limits<streamsize>::max(), '\n'); cout << "Invalid input — try again.\n"; continue; }
+        if (!valid_positive(v)) { cout << "Value must be positive and finite.\n"; continue; }
+        return v;
+    }
+}
+
+void handle_straight() {
+    cout << "\nPlease type if its 1-circular cross section, 2-rectangular cross section: ";
+    int option = 0; cin >> option;
+
+    if (option == 1) {
+        double diameter = read_positive("Enter the Diameter(D): ");
+        double end_fixity = read_positive("Enter the constant end fixity(K): ");
+        double length = read_positive("Enter the actual length(L): ");
+        double yield_strength = read_positive("Enter the yield strength of material(S): ");
+        double elastic_modulus = read_positive("Enter the modulus of elasticity of material(E): ");
+
+        double radius_gyration = diameter / 4.0;
+        double area = (PI * diameter * diameter) / 4.0;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
+
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slenderness ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+
+        if (slenderness_ratio > column_constant) {
+            cout << "The column is long, so use Euler's formula." << "\n";
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+        } else {
+            cout << "The column is short — use Johnson's formula." << "\n";
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+        }
+    } else if (option == 2) {
+        double breadth = read_positive("Enter the base(B): ");
+        double height = read_positive("Enter the height(H): ");
+        double length = read_positive("Enter the length(L): ");
+        double end_fixity = read_positive("Enter the constant end fixity(K): ");
+        double yield_strength = read_positive("Enter the yield strength of material(S): ");
+        double elastic_modulus = read_positive("Enter the modulus elasticity of material(E): ");
+
+        double radius_gyration = breadth / std::sqrt(12.0);
+        double area = breadth * height;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
+
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slenderness ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+
+        if (slenderness_ratio > column_constant) {
+            cout << "The column is long, so use Euler's formula." << "\n";
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+        } else {
+            cout << "The column is short — use Johnson's formula." << "\n";
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+        }
+    } else {
+        cout << "Invalid option." << "\n";
+    }
+}
+
+void handle_crooked() {
+    cout << "\nPlease type if its 1-circular cross section, 2-rectangular cross section" << "\n";
+    int option = 0; cin >> option;
+
+    if (option == 1) {
+        double diameter = read_positive("Enter the diameter(D): ");
+        double end_fixity = read_positive("Enter the constant end fixity(K): ");
+        double initial_crookedness = read_positive("Enter the initial crookedness(a): ");
+        double design_factor = read_positive("Enter the design factor(N): ");
+        double length = read_positive("Enter the actual length(L): ");
+        double yield_strength = read_positive("Enter the yield strength of material(s): ");
+        double elastic_modulus = read_positive("Enter the modulus of elasticity of materials(E): ");
+
+        double radius_gyration = diameter / 4.0;
+        double area = (PI * diameter * diameter) / 4.0;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
+        double half_section = diameter / 2.0;
+
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slenderness ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+
+        if (slenderness_ratio > column_constant) {
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            double init_crooked_term = (initial_crookedness * half_section) / (radius_gyration * radius_gyration);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + init_crooked_term) * euler_P);
+            double quad_c2 = (yield_strength * area * euler_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+            cout << "C1: " << quad_c1 << "\n";
+            cout << "C2: " << quad_c2 << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+        } else {
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            double init_crooked_term = (initial_crookedness * half_section) / (radius_gyration * radius_gyration);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + init_crooked_term) * johnson_P);
+            double quad_c2 = (yield_strength * area * johnson_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+            cout << "C1: " << quad_c1 << "\n";
+            cout << "C2: " << quad_c2 << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+        }
+
+    } else if (option == 2) {
+        double breadth = read_positive("Enter the base(B): ");
+        double height = read_positive("Enter the height(H): ");
+        double length = read_positive("Enter the length(L): ");
+        double design_factor = read_positive("Enter the design factor: ");
+        double end_fixity = read_positive("Enter the constant end fixity: ");
+        double yield_strength = read_positive("Enter the yield strength of material: ");
+        double elastic_modulus = read_positive("Enter the modulus of elasticity: ");
+
+        double radius_gyration = breadth / std::sqrt(12.0);
+        double area = breadth * height;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
+
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slenderness ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+
+        if (slenderness_ratio > column_constant) {
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + 0.0) * euler_P);
+            double quad_c2 = (yield_strength * area * euler_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+            cout << "C1: " << quad_c1 << "\n";
+            cout << "C2: " << quad_c2 << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+        } else {
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + 0.0) * johnson_P);
+            double quad_c2 = (yield_strength * area * johnson_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+            cout << "C1: " << quad_c1 << "\n";
+            cout << "C2: " << quad_c2 << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+        }
+
+    } else {
+        cout << "Invalid option." << "\n";
+    }
+}
+
+void handle_eccentric() {
+    cout << "\nPlease type if its 1-circular cross section, 2-rectangular cross section" << "\n";
+    int option = 0; cin >> option;
+
+    if (option == 1) {
+        double diameter = read_positive("Enter the diameter(D) :");
+        double end_fixity = read_positive("Enter the constant end fixity(K): ");
+        double initial_crookedness = read_positive("Enter the initial crookedness(a): ");
+        double design_factor = read_positive("Enter the design factor(N): ");
+        double length = read_positive("Enter the actual length(L): ");
+        double yield_strength = read_positive("Enter the yield strength of material(S): ");
+        double elastic_modulus = read_positive("Enter the modulus of elasticity of material(E): ");
+        double eccentricity = read_positive("Enter the eccentricity(e): ");
+
+        double radius_gyration = diameter / 4.0;
+        double area = (PI * diameter * diameter) / 4.0;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
+        double half_section = diameter / 2.0;
+
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slender ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+        cout << "Eccentricity: " << eccentricity << "\n";
+
+        if (slenderness_ratio > column_constant) {
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            double init_crooked_term = (initial_crookedness * half_section) / (radius_gyration * radius_gyration);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + init_crooked_term) * euler_P);
+            double quad_c2 = (yield_strength * area * euler_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+            cout << "Approx. Maximum Stress: " << (allowable_load/area) << " (load/area)\n";
+        } else {
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            double init_crooked_term = (initial_crookedness * half_section) / (radius_gyration * radius_gyration);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + init_crooked_term) * johnson_P);
+            double quad_c2 = (yield_strength * area * johnson_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+            cout << "Approx. Maximum Stress: " << (allowable_load/area) << " (load/area)\n";
+        }
+
+    } else if (option == 2) {
+        double breadth = read_positive("Enter the base(B): ");
+        double height = read_positive("Enter the height(H): ");
+        double length = read_positive("Enter the length(L): ");
+        double design_factor = read_positive("Enter the design factor(N): ");
+        double end_fixity = read_positive("Enter the constant end fixity(K): ");
+        double yield_strength = read_positive("Enter the yield strength of material(S): ");
+        double elastic_modulus = read_positive("Enter the modulus of elasticity(E): ");
+        double eccentricity = read_positive("Enter the eccentricity(e): ");
+
+        double radius_gyration = breadth / std::sqrt(12.0);
+        double area = breadth * height;
+        double slenderness_ratio = (end_fixity * length) / radius_gyration;
+        double column_constant = std::sqrt((2.0 * PI * PI * elastic_modulus) / yield_strength);
 
 
-int main(){
+        cout << fixed << setprecision(6);
+        cout << "Radius of gyration: " << radius_gyration << "\n";
+        cout << "Area: " << area << "\n";
+        cout << "Slenderness ratio: " << slenderness_ratio << "\n";
+        cout << "Column constant: " << column_constant << "\n";
+        cout << "Eccentricity: " << eccentricity << "\n";
 
-menu:
-	int option;
-	cout<<"<----------MENU---------->"<<endl;
-	cout<<"Welcome to Column Solver"<<endl;
-	cout<<"1 - Straight column\n2 - Crooked column\n3 - Eccentric column\n\n";
-   cout<<"Select from the following: ";
-	cin>>option;
-	switch(option){
-		case 1:
-			cout<<"You have selected straight column."<<endl;
-			goto straight;
-		case 2:
-			cout<<"You have selected crooked column."<<endl;
-			goto crooked;
-		case 3:
-			cout<<"You have selected eccentric column."<<endl;
-			goto eccentric;
-	}
+        if (slenderness_ratio > column_constant) {
+            double euler_P = euler_load_from_sr(elastic_modulus, area, slenderness_ratio);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + 0.0) * euler_P);
+            double quad_c2 = (yield_strength * area * euler_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Euler): " << euler_P << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+            cout << "Approx. Maximum Stress: " << (allowable_load/area) << " (load/area)\n";
+        } else {
+            double johnson_P = johnson_load(area, yield_strength, slenderness_ratio, elastic_modulus);
+            double quad_c1 = (-1.0 / design_factor) * ((yield_strength * area) + (1.0 + 0.0) * johnson_P);
+            double quad_c2 = (yield_strength * area * johnson_P) / (design_factor * design_factor);
+            double allowable_load = solve_quadratic_small_root(quad_c1, quad_c2);
+            cout << "Critical Load (Johnson): " << johnson_P << "\n";
+            cout << "Allowable Load: " << allowable_load << "\n";
+            cout << "Approx. Maximum Stress: " << (allowable_load/area) << " (load/area)\n";
+        }
 
-back:
-	char returner;
-	cout<<"\nBack to main menu?(y/n) ";
-	cin>>returner;
-	if((returner == 'y')||(returner == 'Y')){
-		clrscr();
-		goto menu;
-	}
-	else{
-		cout<<"\n\nThank you for using the system"<<endl;
-		getch();
-		goto exit;
-	}
+    } else {
+        cout << "Invalid option." << "\n";
+    }
+}
 
-straight:
-	cout<<"\nPlease type if its 1-circular cross section, 2-rectangular cross section: ";
-	cin>>option;
-	switch(option){
-		case 1:
-      	/*
-      	r = radius of gyration
-         rr = rectangle slenderness ratio
-         b = base
-         h = height
-         d = diameter
-         sr = slenderness ratio
-         k = end fixity
-         l = actual column length
-         cc = column constant
-         s = yield strength
-         e = modulus of elasticity
-         a = area
-         p = Euler critical load
-         ppp = johnson critical load
-         */
-			float r,rr,b,h,d,sr,k,l,cc,s,e,a,p,ppp;
-			cout<<"Enter the Diameter(D): ";
-			cin>>d;
-			cout<<"Enter the constant end fixity(K): ";
-			cin>>k;
-			cout<<"Enter the actual length(L): ";
-			cin>>l;
-			cout<<"Enter the yield strength of material(S): ";
-			cin>>s;
-			cout<<"Enter the modulus of elasticity of material(E): ";
-			cin>>e;
-			cout<<"\n------RESULT------"<<endl;
-         r=d/4;
-			cout<<"Radius of gyration: "<<r<<endl;
-			a=(M_PI*d*d)/4;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/r;
-			cout<<"Slenderness ratio: "<<sr<<endl;
-			cc=sqrt((2*M_PI*M_PI*e)/s);
-			cout<<"Column constants: "<<cc<<endl;
-			if(sr>cc){
-				cout<<"The column is long, so use Euler's formula."<<endl;
-				p=(M_PI*M_PI*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-			}
-			else if(sr<cc){
-				cout<<"the column is short-we use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(4*M_PI*M_PI*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-			}
-			goto back;
-		case 2:
-			cout<<"Enter the base(B): ";
-			cin>>b;
-			cout<<"Enter the height(H): ";
-			cin>>h;
-			cout<<"Enter the length(L): ";
-			cin>>l;
-			cout<<"Enter the constant end fixity(K): ";
-			cin>>k;
-			cout<<"Enter the yield strength of material(S): ";
-			cin>>s;
-			cout<<"Enter the modulus elasticity of material(E): ";
-			cin>>e;
-         cout<<"\n------RESULT------"<<endl;
-			rr=b/sqrt(12);
-			cout<<"Radius of gyration: "<<rr<<endl;
-			a=b*h;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/rr;
-			cout<<"Slender ratio: "<<sr<<endl;
-			cc=sqrt((2*M_PI*M_PI*e)/s);
-			cout<<"Column constants: "<<cc<<endl;
-			if(sr>cc){
-				cout<<"The column is long, so use Euler's formula."<<endl;
-				p=(M_PI*M_PI*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-			}
-			else if(sr<cc){
-				cout<<"The column is short, so use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(4*M_PI*M_PI*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-			}
-			goto back;
-	}
+int main() {
+    while (true) {
+        cout << "<----------MENU---------->" << "\n";
+        cout << "Welcome to Column Solver" << "\n";
+        cout << "1 - Straight column\n2 - Crooked column\n3 - Eccentric column\n";
+        cout << "Select from the following (0 to exit): ";
 
-crooked:
-	cout<<"\nPlease type if its 1-circular cross section, 2-rectangular cross section"<<endl;
-	cin>>option;
-	switch(option){
-		case 1:
-      	/*
-         r = radius of gyration
-         rr = rectangle slenderness ratio
-         b = base
-         h = height
-         d = diameter
-         sr = slenderness ratio
-         k = end fixity
-         l = actual column length
-         cc = column constant
-         s = yield strength
-         e = modulus of elasticity
-         a = area
-         p = Euler critical load
-         n = design factor
-         ppp = Johnson critical load
-         aa = initial crookedness
-         ccc = distance from the neutral axis
-         c1
-         c2
-         pa = Euler allowable load
-         paa = Johnson allowable load
-         c11
-         c111
-         */
-			float r,rr,b,h,d,sr,k,l,cc,s,e,a,p,n,ppp,aa,ccc,c1,c2,pa,paa,c11,c111;
-			cout<<"Enter the diameter(D): ";
-			cin>>d;
-			cout<<"Enter the constant end fixity(K): ";
-			cin>>k;
-			cout<<"Enter the initial crookedness(a): ";
-			cin>>aa;
-			cout<<"Enter the design factor(N): ";
-			cin>>n;
-			cout<<"Enter the actual length(L): ";
-			cin>>l;
-			cout<<"Enter the yield strength of material(s): ";
-			cin>>s;
-			cout<<"Enter the modulus of elasticity of materials(E): ";
-			cin>>e;
-         cout<<"\n------RESULT------"<<endl;
-			r=d/4;
-			cout<<"Radius of gyration: "<<r<<endl;
-			a=(M_PI*d*d)/4;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/r;
-			cout<<"Slenderness ration: "<<sr<<endl;
-			cc=sqrt((2*M_PI*M_PI*e)/s);
-			cout<<"Column constants: "<<cc<<endl;
-			ccc=d/2;
-			if(sr>cc){
-				cout<<"The column is long, so use Euler's formula."<<endl;
-				p=(M_PI*M_PI*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-				c11=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c11)*p);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*p)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				/*pa=(((pa*pa)+c2)/c1);*/
+        int opt = -1;
+        if (!(cin >> opt)) { break; }
+        if (opt == 0) break;
 
-            pa=((-c1)-(sqrt(c1*c1-4*c2)))/(2);
+        switch (opt) {
+            case 1: handle_straight(); break;
+            case 2: handle_crooked(); break;
+            case 3: handle_eccentric(); break;
+            default: cout << "Invalid selection\n"; break;
+        }
 
-				cout<<"Allowable Load: "<<pa<<endl;
-			}
-			else{
-				cout<<"The column is short, so use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(4*M_PI*M_PI*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-				c111=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c111)*ppp);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*ppp)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				/*paa=((paa*paa)+c2)/c1;*/
+        cout << "\nBack to main menu? (y/n): ";
+        char c; cin >> c;
+        if (!(c == 'y' || c == 'Y')) break;
+    }
 
-            paa=((-c1)-(sqrt(c1*c1-4*c2)))/(2);
-
-
-				cout<<"Allowable Load: "<<paa<<endl;
-			}
-			goto back;
-
-		case 2:
-			cout<<"Enter the base(B): ";
-			cin>>b;
-			cout<<"Enter the hieght(H): ";
-			cin>>h;
-			cout<<"Enter the length(L): ";
-			cin>>l;
-			cout<<"Enter the design factor: ";
-			cin>>n;
-			cout<<"Enter the constant end fixity: ";
-			cin>>k;
-			cout<<"Enter the yield strength of material: ";
-			cin>>s;
-			cout<<"Enter the modulus of elasticity: ";
-			cin>>e;
-         cout<<"\n------RESULT------"<<endl;
-			r=b/sqrt(12);
-			cout<<"Radius of gyration: "<<r<<endl;
-			a=b*h;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/r;
-			cout<<"Slenderness ratio: "<<sr<<endl;
-			cc=sqrt((19.719*e)/s);
-			cout<<"Column constant: "<<cc<<endl;
-			ccc=b/2;
-			if(sr>cc){
-				cout<<"The column is long, so use Euler's formula."<<endl;
-				p=(9.869*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-				c11=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c11)*p);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*p)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				pa=(((pa*pa)+c2)/c1);
-				cout<<"Allowable Load: "<<pa<<endl;
-			}
-			else{
-				cout<<"The column is short, so use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(39.478*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-				c111=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c111)*ppp);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*ppp)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				paa=((paa*paa)+c2)/c1;
-				cout<<"Allowable load: "<<paa<<endl;
-			}
-			goto back;
-	}
-
-eccentric:
-	cout<<"\nPlease type if its 1-circular cross section, 2-rectangular cross section";
-	cin>>option;
-	switch(option){
-		case 1:
-			float r,rr,b,h,d,sr,k,l,cc,s,e,a,p,n,ppp,aa,ccc,c1,c2,pa,paa,c11,c111,ee,o,o1,o2,o3;
-			cout<<"Enter the diamter(D) :";
-			cin>>d;
-			cout<<"Enter the constant end fixity(K): ";
-			cin>>k;
-			cout<<"Enter the inital crookedness(a): ";
-			cin>>aa;
-			cout<<"Enter the design factor(N): ";
-			cin>>n;
-			cout<<"Enter the actual length(L): ";
-			cin>>l;
-			cout<<"Enter the yield strength of material(S): ";
-			cin>>s;
-			cout<<"Enter the modulus of elasticity of material(E): ";
-			cin>>e;
-			cout<<"Enter the eccentricity(e): ";
-			cin>>ee;
-         cout<<"\n------RESULT------"<<endl;
-			r=d/4;
-			cout<<"Radius of gyration: "<<r<<endl;
-			a=(3.14*d*d)/4;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/r;
-			cout<<"Slender ratio: "<<sr<<endl;
-			cc=sqrt((19.719*e)/s);
-			cout<<"Column constants: "<<cc<<endl;
-			ccc=d/2;
-			if(sr>cc){
-				cout<<"The coulum is long, so use Euler's formula."<<endl;
-				p=(9.869*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-				c11=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c11)*p);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*p)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				pa=(((pa*pa)+c2)/c1);
-				cout<<"Allowable Load: "<<pa<<endl;
-				o=pa;
-				cout<<"Maximum Stresses: "<<o<<endl;
-			}
-			else{
-				cout<<"The column is short, so use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(39.478*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-				c111=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c111)*ppp);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*ppp)/(n*n);
-				paa=((paa*paa)+c2)/c1;
-				cout<<"Allowable Load: "<<paa<<endl;
-			}
-			goto back;
-
-		case 2:
-			cout<<"Enter the base(B): ";
-			cin>>b;
-			cout<<"Enter the hieght(H): ";
-			cin>>h;
-			cout<<"Enter the length(L): ";
-			cin>>l;
-			cout<<"Enter the design factor(N): ";
-			cin>>n;
-			cout<<"Enter the constant end fixity(K): ";
-			cin>>k;
-			cout<<"Enter the yield strength of material(S): ";
-			cin>>s;
-         cout<<"Enter the modolus of elasticity(E): ";
-			cin>>e;
-			cout<<"Enter the eccentricity(e): ";
-			cin>>ee;
-         cout<<"\n------RESULT------"<<endl;
-         r=b/sqrt(12);
-			cout<<"Radius of gyration: "<<r<<endl;
-			a=b*h;
-			cout<<"Area: "<<a<<endl;
-			sr=(k*l)/r;
-			cout<<"Slenderness ratio: "<<sr<<endl;
-			cc=sqrt((19.719*e)/s);
-			cout<<"Column constant: "<<cc<<endl;
-			ccc=b/2;
-			if(sr>cc){
-				cout<<"The column is long, so use Euler's formula."<<endl;
-				p=(9.869*e*a)/(sr*sr);
-				cout<<"Critical Load: "<<p<<endl;
-				c11=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c11)*p);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*p)/(n*n);
-				cout<<"C2: "<<c2<<endl;
-				pa=((pa*pa)+c2)/c1;
-				cout<<"Allowable Load: "<<pa<<endl;
-			}
-			else{
-				cout<<"The column is short, so use Johnson's formula."<<endl;
-				ppp=(a*s)*(1-(s*sr*sr)/(39.478*e));
-				cout<<"Critical Load: "<<ppp<<endl;
-				c111=(aa*ccc)/(r*r);
-				c1=(-1/n)*((s*a)+(1+c111)*ppp);
-				cout<<"C1: "<<c1<<endl;
-				c2=(s*a*ppp)/(n/n);
-				cout<<"C2: "<<c2<<endl;
-				paa=((paa=paa)+c2)/c1;
-				cout<<"Allowable Load: "<<paa<<endl;
-				o1=sqrt(paa/(a*e));
-				o2=(k*l)/2*r;
-				o3=(1/(cos(o2*o1)));
-				o=(paa/a)*(1+(c111)*o3);
-				cout<<"Maximum Stress: "<<o<<endl;
-			}
-			goto back;
-	}
-	return 0;
-exit:
+    cout << "\nThank you for using the system\n";
+    return 0;
 }
 
